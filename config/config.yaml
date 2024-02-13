@@ -1,0 +1,8 @@
+#path where raw fastq reads are stored
+readfolder: "test_data/"
+#path to adapters in .fasta format: "/some/path/Trimmomatic/adapters/"
+adapters: "/home/borzyy/tools/Trimmomatic-0.39/adapters/TruSeq3-PE.fa"
+#path to human genome bowtie2 database
+human: "/mnt/disk1/PROJECTS/IMMUNE/DATA/hg38/hg38bt"
+#path to AR gene bowtie2 database:
+AR: "/mnt/disk1/PROJECTS/RESISTOME/databases/AR/MegaRes3.0/mr2h_rmnmi"
