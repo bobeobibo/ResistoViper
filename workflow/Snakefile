@@ -1,4 +1,225 @@
-# Main entrypoint of the workflow. 
-# Please follow the best practices: 
-# https://snakemake.readthedocs.io/en/stable/snakefiles/best_practices.html,
-# in particular regarding the standardized folder structure mentioned there. 
+import os
+
+
+configfile: "../config/config.yaml"
+
+
+# base is a folder the reads that are stored as reads/SAMPLE/SAMPLE_{1-2}.fq.gz
+base = config["readfolder"]
+
+ids = os.listdir(base + "reads/")
+
+want_all = []
+want_all.append(expand(base + "nohuman/{sample}_nh_1.fq.gz", sample=ids))
+want_all.append(expand(base + "nohuman/{sample}_nh_2.fq.gz", sample=ids))
+want_all.append(expand(base + "AR/{sample}.bam", sample=ids))
+want_all.append(expand(base + "nreads/{sample}.nreads", sample=ids))
+want_all.append(expand(base + "AR/{sample}.bam.bai", sample=ids))
+want_all.append(expand(base + "AR/{sample}.bam.stat", sample=ids))
+want_all.append(expand(base + "AR/{sample}.RPKM", sample=ids))
+want_all.append(base + "results/All.RPKM")
+want_all.append(expand(base + "AR/{sample}.bgcov", sample=ids))
+want_all.append(expand(base + "AR/99_filt/{sample}.bgcov.wid.meg99", sample=ids))
+want_all.append(expand(base + "AR/99_filt/{sample}.bgcov.wid.gene99", sample=ids))
+want_all.append(expand(base + "AR/99_filt/{sample}.bgcov.wid.gene99.adiv", sample=ids))
+want_all.append(base + "results/All.adiv")
+want_all.append(base + "results/All.ARsample_counts")
+
+
+rule all:
+    input:
+        want_all,
+
+
+# trimmed reads will be deleted after analysis
+rule trim:
+    input:
+        r1=base + "reads/{sample}/{sample}_1.fq.gz",
+        r2=base + "reads/{sample}/{sample}_2.fq.gz",
+        adapters=config["adapters"],
+    output:
+        r1=temp(base + "trimmed/{sample}_trim.1.fq.gz"),
+        r2=temp(base + "trimmed/{sample}_trim.2.fq.gz"),
+        r1_unp=temp(base + "trimmed/{sample}_trim_unp.1.fq.gz"),
+        r2_unp=temp(base + "trimmed/{sample}_trim_unp.2.fq.gz"),
+    conda:
+        "envs/arsnake.yml"
+    log:
+        base + "logs/trimmed/{sample}.log",
+    shell:
+        "trimmomatic PE -phred33 {input.r1} {input.r2} {output.r1} {output.r1_unp} {output.r2} {output.r2_unp} ILLUMINACLIP:{input.adapters}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:10:20 MINLEN:75 &> {log}"
+
+
+# filtering human DNA
+rule remove_human:
+    input:
+        r1=base + "trimmed/{sample}_trim.1.fq.gz",
+        r2=base + "trimmed/{sample}_trim.2.fq.gz",
+    params:
+        db=config["human"],
+        dest=base + "nohuman/{sample}_nh_%.fq.gz",
+    output:
+        r1=temp(base + "nohuman/{sample}_nh_1.fq.gz"),
+        r2=temp(base + "nohuman/{sample}_nh_2.fq.gz"),
+    conda:
+        "envs/arsnake.yml"
+    log:
+        base + "logs/nohuman/{sample}_nohuman.log",
+    shell:
+        "bowtie2 -x {params.db} -1 {input.r1} -2 {input.r2} -k 1 --un-conc {params.dest} > /dev/null 2> {log}"
+
+# counting "clean" filtered reads
+rule count_reads:
+    input:
+        base + "nohuman/{sample}_nh_1.fq.gz",
+    output:
+        base + "nreads/{sample}.nreads",
+    shell:
+        "echo $(cat {input} | wc -l)/4 | bc > {output}"
+
+
+# mapping "clean" reads to AR gene database
+rule map_AR:
+    input:
+        r1=base + "nohuman/{sample}_nh_1.fq.gz",
+        r2=base + "nohuman/{sample}_nh_2.fq.gz",
+    params:
+        db=config["AR"],
+    output:
+        base + "AR/{sample}.bam",
+    conda:
+        "envs/arsnake.yml"
+    log:
+        base + "logs/AR/{sample}.mapAR.log",
+    shell:
+        "bowtie2 -x {params.db} -1 {input.r1} -2 {input.r2} -k 1 2> {log} | samtools view -b -q 30 | samtools sort -o {output} "
+
+# indexing .bam files
+rule bam_index:
+    input:
+        base + "AR/{sample}.bam",
+    output:
+        base + "AR/{sample}.bam.bai",
+    conda:
+        "envs/arsnake.yml"
+    log:
+        base + "logs/samtools/{sample}.index.log",
+    shell:
+        "samtools index {input} &> {log}"
+
+
+# get mapping stats that is needed for RPKM
+rule mapping_stat:
+    input:
+        bam=base + "AR/{sample}.bam",
+        index=base + "AR/{sample}.bam.bai",
+    output:
+        base + "AR/{sample}.bam.stat",
+    log:
+        #in case something goes wrong
+        base + "logs/samtools/{sample}.ERRlog",
+    conda:
+        "envs/arsnake.yml"
+    shell:
+        "samtools idxstats {input.bam} > {output}"
+
+
+# get RPKM for each gene
+rule rpkm:
+    input:
+        stat=base + "AR/{sample}.bam.stat",
+        nrd=base + "nreads/{sample}.nreads",
+    output:
+        base + "AR/{sample}.RPKM",
+    log:
+        #in case something goes wrong
+        base + "logs/RPKM/{sample}.ERRlog",
+    shell:
+        "python3 scripts/rpkm.py {input.nrd} {input.stat} > {output} 2> {log}"
+
+
+# create RPKM table for all samples
+rule rpkm_all:
+    input:
+        expand(base + "AR/{sample}.RPKM", sample=ids),
+    output:
+        base + "results/All.RPKM",
+    shell:
+        "cat {input} > {output}"
+# get info on how many nucleotides are covered for each gene
+rule bgcov:
+    input:
+        base + "AR/{sample}.bam",
+    output:
+        base + "AR/{sample}.bgcov",
+    conda:
+        "envs/arsnake.yml"
+    log:
+        #in case something goes wrong
+        base + "logs/wid/{sample}.bgcov.ERRlog",
+    shell:
+        "bedtools genomecov -ibam {input} > {output} 2> {log}"
+
+
+# get % of covered bases for each gene variant
+rule wid:
+    input:
+        base + "AR/{sample}.bgcov",
+    output:
+        base + "AR/{sample}.bgcov.wid",
+    log:
+        #in case something goes wrong
+        base + "logs/wid/{sample}.wid.ERRlog",
+    shell:
+        "python3 scripts/genomecov_to_wid.py {input} > {output} 2> {log}"
+
+
+# get only sequences that are covered by 99% of their length
+rule filter_99meg:
+    input:
+        base + "AR/{sample}.bgcov.wid",
+    output:
+        base + "AR/99_filt/{sample}.bgcov.wid.meg99",
+    shell:
+        "cat {input} | awk '{{if ($2 > 98) print}}' > {output}"
+
+
+# get only genes that have at least one gene variant covered by 99% of its length
+rule filter_99gene:
+    input:
+        base + "AR/99_filt/{sample}.bgcov.wid.meg99",
+    output:
+        base + "AR/99_filt/{sample}.bgcov.wid.gene99",
+    shell:
+        """cat {input} | awk '{{split($1,a,"|") ; print a[5]}}' | sort -u > {output}"""
+
+
+# get resistome alpha diversity as a number of genes that have al least
+# one gene variant covered by 99% of its length
+rule adiv_99:
+    input:
+        base + "AR/99_filt/{sample}.bgcov.wid.gene99",
+    output:
+        base + "AR/99_filt/{sample}.bgcov.wid.gene99.adiv",
+    shell:
+        "s=$(cat {input} | wc -l); echo $s {wildcards.sample} > {output}"
+# get table with a-diversity values for all samples
+rule adiv_all:
+    input:
+        expand(base + "AR/99_filt/{sample}.bgcov.wid.gene99.adiv", sample=ids),
+    output:
+        base + "results/All.adiv",
+    shell:
+        "cat {input} > {output}"
+
+
+# get table with sample counts for each fully covered gene
+# (needed for identifying "core" genes)
+# NOTE: this file comes empty in test data
+rule forcore:
+    input:
+        expand(base + "AR/99_filt/{sample}.bgcov.wid.gene99", sample=ids),
+    output:
+        base + "results/All.ARsample_counts",
+    shell:
+        "cat {input} | sort | uniq -c | sort -nk1 > {output}"
