@@ -9,7 +9,7 @@ import os
 medlen_dict = {}
 
 #opening pre-calculated median lengths for each of the genes in MEGARes database
-with open('data/medians2211') as medfile:
+with open('data/subset_megares.GENE.medianLen.txt') as medfile:
 	medf = medfile.read().split('\n')[:-1]
 for line in medf:
 	gene = line.split(' ')[0]
