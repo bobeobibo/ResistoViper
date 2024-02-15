@@ -1,0 +1,11 @@
+name: arsnake
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - bioconda::trimmomatic
+  - bioconda::snakemake
+  - bioconda::bowtie2
+  - bioconda::bedtools
+  - bioconda::samtools
+prefix: /home/borzyy/mambaforge/envs/arsnake
