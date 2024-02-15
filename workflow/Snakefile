@@ -1,7 +1,7 @@
 import os
 
 
-configfile: "../config/config.yaml"
+configfile: "config/config.yaml"
 
 
 # base is a folder the reads that are stored as reads/SAMPLE/SAMPLE_{1-2}.fq.gz
