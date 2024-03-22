@@ -14,6 +14,7 @@ want_all.append(expand(base + "nohuman/{sample}_nh_1.fq.gz", sample=ids))
 want_all.append(expand(base + "nohuman/{sample}_nh_2.fq.gz", sample=ids))
 want_all.append(expand(base + "AR/{sample}.bam", sample=ids))
 want_all.append(expand(base + "nreads/{sample}.nreads", sample=ids))
+want_all.append(base + "results/All.nreads")
 want_all.append(expand(base + "AR/{sample}.bam.bai", sample=ids))
 want_all.append(expand(base + "AR/{sample}.bam.stat", sample=ids))
 want_all.append(expand(base + "AR/{sample}.RPKM", sample=ids))
@@ -75,8 +76,16 @@ rule count_reads:
     output:
         base + "nreads/{sample}.nreads",
     shell:
-        "echo $(cat {input} | wc -l)/4 | bc > {output}"
+        "echo $(echo $(zcat {input} | wc -l)/4 | bc) $(basename {input} _nh_1.fq.gz) > {output}"
 
+# create nreads table for all samples
+rule nreads_all:
+    input:
+        expand(base + "nreads/{sample}.nreads", sample=ids),
+    output:
+        base + "results/All.nreads",
+    shell:
+        "cat {input} > {output}"
 
 # mapping "clean" reads to AR gene database
 rule map_AR:
