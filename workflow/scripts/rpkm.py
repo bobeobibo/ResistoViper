@@ -19,7 +19,7 @@ for line in medf:
 #first argument is a file containing the number of filtered reads
 with open(sys.argv[1]) as readsfile:
 	readsf = readsfile.read().split('\n')[:-1]
-nreads = int(readsf[0])
+nreads = int(readsf[0].split(' ')[0])
 
 #second argument is a .bam.stat file
 #and we assume it is called "SRRXXXXXX.bam.stat"
