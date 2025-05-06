@@ -1,8 +1,5 @@
 import os
-
-
-configfile: "config/config.yaml"
-
+configfile: "../config/config.yaml"
 
 # base is a folder the reads that are stored as reads/SAMPLE/SAMPLE_{1-2}.fq.gz
 base = config["readfolder"]
@@ -10,8 +7,7 @@ base = config["readfolder"]
 ids = os.listdir(base + "reads/")
 
 want_all = []
-want_all.append(expand(base + "nohuman/{sample}_nh_1.fq.gz", sample=ids))
-want_all.append(expand(base + "nohuman/{sample}_nh_2.fq.gz", sample=ids))
+want_all.append(expand(base + "nohuman/{sample}_noMatch_1.fq.gz", sample = ids))
 want_all.append(expand(base + "AR/{sample}.bam", sample=ids))
 want_all.append(expand(base + "nreads/{sample}.nreads", sample=ids))
 want_all.append(base + "results/All.nreads")
@@ -19,28 +15,46 @@ want_all.append(expand(base + "AR/{sample}.bam.bai", sample=ids))
 want_all.append(expand(base + "AR/{sample}.bam.stat", sample=ids))
 want_all.append(expand(base + "AR/{sample}.RPKM", sample=ids))
 want_all.append(base + "results/All.RPKM")
-want_all.append(expand(base + "AR/{sample}.bgcov", sample=ids))
-want_all.append(expand(base + "AR/99_filt/{sample}.bgcov.wid.meg99", sample=ids))
-want_all.append(expand(base + "AR/99_filt/{sample}.bgcov.wid.gene99", sample=ids))
-want_all.append(expand(base + "AR/99_filt/{sample}.bgcov.wid.gene99.adiv", sample=ids))
-want_all.append(base + "results/All.adiv")
-want_all.append(base + "results/All.ARsample_counts")
-
+want_all.append(expand(base + "AR_red/{sample}.bgcov", sample=ids))
+want_all.append(expand(base + "AR_red/{sample}.bgcov.wid", sample=ids))
+want_all.append(expand(base + "AR_red/99_filt/{sample}.bgcov.wid.meg99", sample=ids))
+want_all.append(expand(base + "AR_red/99_filt/{sample}.bgcov.wid.gene99", sample=ids))
+want_all.append(expand(base + "AR_red/99_filt/{sample}.bgcov.wid.gene99", sample=ids))
+want_all.append(expand(base + "AR_red/99_filt/{sample}.bgcov.wid.gene99.adiv", sample=ids))
+want_all.append(base + "results/All_red.adiv")
+want_all.append(expand(base + "taxa/{sample}.mph_report", sample=ids))
+want_all.append(expand(base+"taxa/{sample}.RPM_mph", sample=ids))
+want_all.append(base + "results/All.RPM_mph")
 
 rule all:
     input:
         want_all,
 
+# cutting adapters. files will be removed after obtaining "clean" reads
+rule cutadapt:
+    input:
+        r1=base + "reads/{sample}/{sample}_1.fq.gz",
+        r2=base + "reads/{sample}/{sample}_2.fq.gz",
+    output:
+        r1=temp(base + "cutadapt/{sample}_cut.1.fq.gz"),
+        r2=temp(base + "cutadapt/{sample}_cut.2.fq.gz"),
+        info=temp(base + "cutadapt/{sample}_cut.info"),
+    conda:
+        "envs/arsnake.yml"
+    log:
+        base + "logs/cutadapt/{sample}.log",
+    shell:
+        "cutadapt -a AAGTCGGAGGCCAAGCGGTCTTAGGAAGACAA -A AAGTCGGATCCTAGCCATGTCGTTCTGTGAG --minimum-length 1 --info-file {output.info} -o {output.r1} -p {output.r2}  {input.r1} {input.r2} \
+  > {log} 2>&1;"
 
-# trimmed reads will be deleted after analysis
+# trimming. files  will be removed after obtaining "clean" reads
 rule trim:
     input:
         r1=base + "reads/{sample}/{sample}_1.fq.gz",
         r2=base + "reads/{sample}/{sample}_2.fq.gz",
-        adapters=config["adapters"],
     output:
-        r1=temp(base + "trimmed/{sample}_trim.1.fq.gz"),
-        r2=temp(base + "trimmed/{sample}_trim.2.fq.gz"),
+        r1=base + "trimmed/{sample}_trim.1.fq.gz",
+        r2=base + "trimmed/{sample}_trim.2.fq.gz",
         r1_unp=temp(base + "trimmed/{sample}_trim_unp.1.fq.gz"),
         r2_unp=temp(base + "trimmed/{sample}_trim_unp.2.fq.gz"),
     conda:
@@ -48,35 +62,38 @@ rule trim:
     log:
         base + "logs/trimmed/{sample}.log",
     shell:
-        "trimmomatic PE -phred33 {input.r1} {input.r2} {output.r1} {output.r1_unp} {output.r2} {output.r2_unp} ILLUMINACLIP:{input.adapters}:2:30:10 LEADING:20 TRAILING:20 SLIDINGWINDOW:10:20 MINLEN:75 &> {log}"
+        "trimmomatic PE -phred33 {input.r1} {input.r2} {output.r1} {output.r1_unp} {output.r2} {output.r2_unp} LEADING:25 TRAILING:25 SLIDINGWINDOW:4:15 MINLEN:50 &> {log}"
 
 
-# filtering human DNA
-rule remove_human:
+# locating biobloom filter files
+
+# filtering human DNA and obtaining clean reads
+rule biobloom:
     input:
         r1=base + "trimmed/{sample}_trim.1.fq.gz",
         r2=base + "trimmed/{sample}_trim.2.fq.gz",
-    params:
-        db=config["human"],
-        dest=base + "nohuman/{sample}_nh_%.fq.gz",
     output:
-        r1=temp(base + "nohuman/{sample}_nh_1.fq.gz"),
-        r2=temp(base + "nohuman/{sample}_nh_2.fq.gz"),
-    conda:
-        "envs/arsnake.yml"
-    log:
-        base + "logs/nohuman/{sample}_nohuman.log",
+        summary=base + "nohuman/{sample}_summary.tsv",
+        r1_noMatch=base + "nohuman/{sample}_noMatch_1.fq.gz",
+        r2_noMatch=base + "nohuman/{sample}_noMatch_2.fq.gz",
+    params:
+        dirr=base + "nohuman/{sample}",
+        hg19_masked_bf = config["human_bf"],
+        hg19_masked_txt = config["human_txt"],
     shell:
-        "bowtie2 -x {params.db} -1 {input.r1} -2 {input.r2} --non-deterministic --un-conc-gz {params.dest} > /dev/null 2> {log}"
+        """
+        biobloomcategorizer --fq  -p  {params.dirr} -f {params.hg19_masked_bf} -e {input.r1} {input.r2} --gz_output &> {output.summary}
+        """
+
 
 # counting "clean" filtered reads
 rule count_reads:
     input:
-        base + "nohuman/{sample}_nh_1.fq.gz",
+        base + "nohuman/{sample}_noMatch_1.fq.gz",
     output:
         base + "nreads/{sample}.nreads",
     shell:
-        "echo $(echo $(zcat {input} | wc -l)/4 | bc) $(basename {input} _nh_1.fq.gz) > {output}"
+        "echo $(echo $(zcat {input} | wc -l)/4 | bc) $(basename {input} _noMatch_1.fq.gz) > {output}"
 
 # create nreads table for all samples
 rule nreads_all:
@@ -88,10 +105,11 @@ rule nreads_all:
         "cat {input} > {output}"
 
 # mapping "clean" reads to AR gene database
+# BASIC mapping mode
 rule map_AR:
     input:
-        r1=base + "nohuman/{sample}_nh_1.fq.gz",
-        r2=base + "nohuman/{sample}_nh_2.fq.gz",
+        r1=base + "nohuman/{sample}_noMatch_1.fq.gz",
+        r2=base + "nohuman/{sample}_noMatch_2.fq.gz",
     params:
         db=config["AR"],
     output:
@@ -155,12 +173,28 @@ rule rpkm_all:
         base + "results/All.RPKM",
     shell:
         "cat {input} > {output}"
+
+# REDUNDANT mapping mode
+rule map_AR_red:
+    input:
+        r1=base + "nohuman/{sample}_noMatch_1.fq.gz",
+        r2=base + "nohuman/{sample}_noMatch_2.fq.gz",
+    params:
+        db=config["AR"],
+    output:
+        temp(base + "AR_red/{sample}.bam"),
+    log:
+        base + "logs/AR_red/{sample}.mapAR.log",
+    shell:
+        "bowtie2 -x {params.db} -1 {input.r1} -2 {input.r2} -a 2> {log} | samtools view -b -q 30 | samtools sort -o {output}"
+
+
 # get info on how many nucleotides are covered for each gene
 rule bgcov:
     input:
-        base + "AR/{sample}.bam",
+        base + "AR_red/{sample}.bam",
     output:
-        base + "AR/{sample}.bgcov",
+        base + "AR_red/{sample}.bgcov",
     conda:
         "envs/arsnake.yml"
     log:
@@ -173,9 +207,9 @@ rule bgcov:
 # get % of covered bases for each gene variant
 rule wid:
     input:
-        base + "AR/{sample}.bgcov",
+        base + "AR_red/{sample}.bgcov",
     output:
-        base + "AR/{sample}.bgcov.wid",
+        base + "AR_red/{sample}.bgcov.wid",
     log:
         #in case something goes wrong
         base + "logs/wid/{sample}.wid.ERRlog",
@@ -186,9 +220,9 @@ rule wid:
 # get only sequences that are covered by 99% of their length
 rule filter_99meg:
     input:
-        base + "AR/{sample}.bgcov.wid",
+        base + "AR_red/{sample}.bgcov.wid",
     output:
-        base + "AR/99_filt/{sample}.bgcov.wid.meg99",
+        base + "AR_red/99_filt/{sample}.bgcov.wid.meg99",
     shell:
         "cat {input} | awk '{{if ($2 > 98) print}}' > {output}"
 
@@ -196,28 +230,29 @@ rule filter_99meg:
 # get only genes that have at least one gene variant covered by 99% of its length
 rule filter_99gene:
     input:
-        base + "AR/99_filt/{sample}.bgcov.wid.meg99",
+        base + "AR_red/99_filt/{sample}.bgcov.wid.meg99",
     output:
-        base + "AR/99_filt/{sample}.bgcov.wid.gene99",
+        base + "AR_red/99_filt/{sample}.bgcov.wid.gene99",
     shell:
         """cat {input} | awk '{{split($1,a,"|") ; print a[5]}}' | sort -u > {output}"""
 
 
-# get resistome alpha diversity as a number of genes that have al least
+# get resistome richness as a number of genes that have al least
 # one gene variant covered by 99% of its length
 rule adiv_99:
     input:
-        base + "AR/99_filt/{sample}.bgcov.wid.gene99",
+        base + "AR_red/99_filt/{sample}.bgcov.wid.gene99",
     output:
-        base + "AR/99_filt/{sample}.bgcov.wid.gene99.adiv",
+        base + "AR_red/99_filt/{sample}.bgcov.wid.gene99.adiv",
     shell:
         "s=$(cat {input} | wc -l); echo $s {wildcards.sample} > {output}"
-# get table with a-diversity values for all samples
+
+# get table with resistome  values for all samples
 rule adiv_all:
     input:
-        expand(base + "AR/99_filt/{sample}.bgcov.wid.gene99.adiv", sample=ids),
+        expand(base + "AR_red/99_filt/{sample}.bgcov.wid.gene99.adiv", sample=ids),
     output:
-        base + "results/All.adiv",
+        base + "results/All_red.adiv",
     shell:
         "cat {input} > {output}"
 
@@ -227,8 +262,43 @@ rule adiv_all:
 # NOTE: this file comes empty in test data
 rule forcore:
     input:
-        expand(base + "AR/99_filt/{sample}.bgcov.wid.gene99", sample=ids),
+        expand(base + "AR_red/99_filt/{sample}.bgcov.wid.gene99", sample=ids),
     output:
         base + "results/All.ARsample_counts",
     shell:
         "cat {input} | sort | uniq -c | sort -nk1 > {output}"
+
+# build taxonomy profiles with metaphlan
+rule metaphlan:
+    input:
+        r1=base + "nohuman/{sample}_noMatch_1.fq.gz",
+        r2=base + "nohuman/{sample}_noMatch_2.fq.gz",
+    output:
+        bto=temp(base + "taxa/{sample}.mph_bowtie2out.bz2"),
+        r=base + "taxa/{sample}.mph_report",
+    log:
+        log=base + "logs/taxa/{sample}.mph.log",
+    shell:
+        "metaphlan {input.r1},{input.r2} --input_type fastq --bowtie2out {output.bto} --ignore_eukaryotes -t rel_ab_w_read_stats -o {output.r} 2> {log}"
+
+# convert abundance values to .RPM 
+rule mph_rpm:
+        input:
+                mph=base+"taxa/{sample}.mph_report",
+                nreads=base+"nreads/{sample}.nreads"
+        output:
+                base+"taxa/{sample}.RPM_mph"
+        shell:
+                "python3 scripts/reads_per_taxa.py {input.mph} {input.nreads} > {output}"
+
+# create a summary table with all .RPM values
+# Note: eukaryotes are ignored
+# Note: this file may be big, consider analyzing it by taxa levels
+rule mph_rpm_all:
+    input:
+        expand(base+"taxa/{sample}.RPM_mph", sample=ids),
+    output:
+        base + "results/All.RPM_mph",
+    shell:
+        "cat {input} > {output}"
+

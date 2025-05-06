@@ -1,0 +1,61 @@
+This is cutadapt 4.9 with Python 3.10.13
+Command line parameters: -a AAGTCGGAGGCCAAGCGGTCTTAGGAAGACAA -A AAGTCGGATCCTAGCCATGTCGTTCTGTGAG --minimum-length 1 --info-file ../workflow/test_data/cutadapt/P09_cut.info -o ../workflow/test_data/cutadapt/P09_cut.1.fq.gz -p ../workflow/test_data/cutadapt/P09_cut.2.fq.gz ../workflow/test_data/reads/P09/P09_1.fq.gz ../workflow/test_data/reads/P09/P09_2.fq.gz
+Processing paired-end reads on 1 core ...
+Finished in 0.032 s (64.286 µs/read; 0.93 M reads/minute).
+
+=== Summary ===
+
+Total read pairs processed:                500
+  Read 1 with adapter:                       5 (1.0%)
+  Read 2 with adapter:                      11 (2.2%)
+
+== Read fate breakdown ==
+Pairs that were too short:                   0 (0.0%)
+Pairs written (passing filters):           500 (100.0%)
+
+Total basepairs processed:       150,000 bp
+  Read 1:        75,000 bp
+  Read 2:        75,000 bp
+Total written (filtered):        149,950 bp (100.0%)
+  Read 1:        74,985 bp
+  Read 2:        74,965 bp
+
+=== First read: Adapter 1 ===
+
+Sequence: AAGTCGGAGGCCAAGCGGTCTTAGGAAGACAA; Type: regular 3'; Length: 32; Trimmed: 5 times
+
+Minimum overlap: 3
+No. of allowed errors:
+1-9 bp: 0; 10-19 bp: 1; 20-29 bp: 2; 30-32 bp: 3
+
+Bases preceding removed adapters:
+  A: 20.0%
+  C: 40.0%
+  G: 40.0%
+  T: 0.0%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	5	7.8	0	5
+
+
+=== Second read: Adapter 2 ===
+
+Sequence: AAGTCGGATCCTAGCCATGTCGTTCTGTGAG; Type: regular 3'; Length: 31; Trimmed: 11 times
+
+Minimum overlap: 3
+No. of allowed errors:
+1-9 bp: 0; 10-19 bp: 1; 20-29 bp: 2; 30-31 bp: 3
+
+Bases preceding removed adapters:
+  A: 27.3%
+  C: 0.0%
+  G: 36.4%
+  T: 36.4%
+  none/other: 0.0%
+
+Overview of removed sequences
+length	count	expect	max.err	error counts
+3	9	7.8	0	9
+4	2	2.0	0	2
