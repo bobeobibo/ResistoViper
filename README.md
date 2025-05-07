@@ -24,7 +24,7 @@ In order to run the pipeline, you will need:
 All of these instruments can be installed with bioconda
 
 You will also need the databases:
-- Human genome in .fasta format (masked hg19, preferably).
+- Human genome in .fasta format (masked hg19, preferably)
 
 Human genome can be downloaded at http://hgdownload.soe.ucsc.edu/goldenPath/hg19/bigZips/
 ```bash
@@ -37,7 +37,7 @@ biobloommaker -p your_prefix /path/to/your/human/genome/hg19.fa
 ```
 Biobloom filter (.bf) and an accessory .txt files will be created.
 Make sure to add path to the both files to the config/config.yaml file!
-- MEGARes database.
+- MEGARes database
 
 We use a subset of MEGARes 3.0 database that is already present in the data/ folder.
 However, if you would like to try full database or previous MEGARes versions, you need to download them from https://www.meglab.org/megares/download/
