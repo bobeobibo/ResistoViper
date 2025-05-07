@@ -6,7 +6,8 @@ It outputs relative abundance values for each ARG (antibiotics resistance gene) 
 It also creates taxonomy profiles.
 
 Input:
-- Paired sequencing reads (.fq), organized in one folder
+- Paired sequencing reads (.fq), organized in individual folders
+
 Output («results» folder):
 - Matrix with relative abundance values for each ARG (All.RPKM)
 - Table with ARG richness values for each sample (All.adiv)
