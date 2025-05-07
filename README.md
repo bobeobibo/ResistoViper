@@ -47,5 +47,5 @@ Note: the scripts are designed to follow MEGARes database header structure, so r
 
 
 
-A small test dataset for trying the pipeline can be found in workflow/test_data/
+A small test dataset for trying the pipeline can be found in workflow/test_data/reads/
 
