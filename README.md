@@ -1,5 +1,6 @@
-# ResistoViperThis pipeline creates resistome profiles from raw metagenomic sequencing reads.
+# ResistoViper
 
+This pipeline creates resistome profiles from raw metagenomic sequencing reads.
 It outputs relative abundance values for each ARG (antibiotics resistance gene) and sample, ARG richness values for each sample, and frequency values for each ARG. 
 It also creates taxonomy profiles.
 
