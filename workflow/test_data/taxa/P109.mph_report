@@ -1,6 +1,0 @@
-#mpa_vJun23_CHOCOPhlAnSGB_202307
-#/home/borzyy/mambaforge/envs/snkmkR/bin/metaphlan ../workflow/test_data/nohuman/P109_noMatch_1.fq.gz,../workflow/test_data/nohuman/P109_noMatch_2.fq.gz --input_type fastq --bowtie2out ../workflow/test_data/taxa/P109.mph_bowtie2out.bz2 --ignore_eukaryotes -t rel_ab_w_read_stats -o ../workflow/test_data/taxa/P109.mph_report
-#SampleID	Metaphlan_Analysis
-#estimated_reads_mapped_to_known_clades:0
-#clade_name	clade_taxid	relative_abundance	coverage	estimated_number_of_reads_from_the_clade
-unclassified	-1	100.0	0	0
