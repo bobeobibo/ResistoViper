@@ -8,7 +8,7 @@ Input:
 Output («results» folder):
 - Matrix with relative abundance values for each ARG (All.RPKM)
 - Table with ARG richness values for each sample (All.adiv)
-- Frequency table with the number of samples
+- Frequency table with the number of samples (All.ARsample_counts)
 - Matrix with relative abundance values for each taxa (All.RPM_mph)
 
 In order to run the pipeline, you will need:

@@ -22,6 +22,7 @@ want_all.append(expand(base + "AR_red/99_filt/{sample}.bgcov.wid.gene99", sample
 want_all.append(expand(base + "AR_red/99_filt/{sample}.bgcov.wid.gene99", sample=ids))
 want_all.append(expand(base + "AR_red/99_filt/{sample}.bgcov.wid.gene99.adiv", sample=ids))
 want_all.append(base + "results/All_red.adiv")
+want_all.append(base + "results/All.ARsample_counts")
 want_all.append(expand(base + "taxa/{sample}.mph_report", sample=ids))
 want_all.append(expand(base+"taxa/{sample}.RPM_mph", sample=ids))
 want_all.append(base + "results/All.RPM_mph")
@@ -50,11 +51,11 @@ rule cutadapt:
 # trimming. files  will be removed after obtaining "clean" reads
 rule trim:
     input:
-        r1=base + "reads/{sample}/{sample}_1.fq.gz",
-        r2=base + "reads/{sample}/{sample}_2.fq.gz",
+        r1=base + "cutadapt/{sample}_cut.1.fq.gz",
+        r2=base + "cutadapt/{sample}_cut.2.fq.gz",
     output:
-        r1=base + "trimmed/{sample}_trim.1.fq.gz",
-        r2=base + "trimmed/{sample}_trim.2.fq.gz",
+        r1=temp(base + "trimmed/{sample}_trim.1.fq.gz"),
+        r2=temp(base + "trimmed/{sample}_trim.2.fq.gz"),
         r1_unp=temp(base + "trimmed/{sample}_trim_unp.1.fq.gz"),
         r2_unp=temp(base + "trimmed/{sample}_trim_unp.2.fq.gz"),
     conda:

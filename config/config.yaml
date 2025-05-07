@@ -1,9 +1,9 @@
 #path where raw fastq reads are stored
-readfolder: "../workflow/test_data/"
+readfolder: "/home/borzyy/Snakes_resistome/ARKH_upload/ResistoViper/workflow/test_data/"
 #path to human genome (masked)
 human_mask: "/mnt/disk1/DATABASES/HumanGenome/hg19_masked/hg19_masked.fa"
 #path to biobloom filter and accessory text file
-human_bf: "/home/borzyy/Snakes_resistome/ARKH_upload/AR-panel-snake/workflow/data/hg19_masked.bf"
-human_txt: "/home/borzyy/Snakes_resistome/ARKH_upload/AR-panel-snake/workflow/data/hg19_masked.txt"
+human_bf: "/home/borzyy/Snakes_resistome/ARKH_upload/ResistoViper/workflow/data/hg19_masked.bf"
+human_txt: "/home/borzyy/Snakes_resistome/ARKH_upload/ResistoViper/workflow/data/hg19_masked.txt"
 #path to AR gene bowtie2 database:
-AR: "/mnt/disk1/PROJECTS/RESISTOME/databases/AR/MegaRes3.0/mr2h_rmnmi"
+AR: "../workflow/data/mr2h_rmnmi"
