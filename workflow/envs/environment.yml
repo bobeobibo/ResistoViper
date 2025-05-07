@@ -1,0 +1,15 @@
+name: snkmkR
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - bioconda::trimmomatic
+  - bioconda::bedtools
+  - bioconda::bowtie2
+  - bioconda::snakemake
+  - bioconda::samtools
+  - metaphlan=4.0.0
+  - bioconda::cutadapt
+  - bioconda::biobloomtools

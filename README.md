@@ -14,6 +14,7 @@ Output («results» folder):
 - Matrix with relative abundance values for each taxa (All.RPM_mph)
 
 In order to run the pipeline, you will need:
+- Snakemake (our version: 7.32.4)
 - Cutadapt (our version: 4.9) You can adjust this step’s settings to fit your data (the current settings are set for DNBSEQ-G400)
 - Trimmomatic (our version: 0.39)
 - Biobloom (our version: 2.3.5-1-gfa70-dirty)
@@ -22,7 +23,7 @@ In order to run the pipeline, you will need:
 - Bedtools (our version: 2.31.1)
 - MetaPhlan (our version: 4.0.0)
 
-All of these instruments can be installed with bioconda
+All of these instruments can be installed with bioconda. Also see workflow/envs/environment.yml
 
 You will also need the databases:
 - Human genome in .fasta format (masked hg19, preferably)
