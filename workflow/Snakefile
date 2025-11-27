@@ -94,7 +94,7 @@ rule count_reads:
     output:
         base + "nreads/{sample}.nreads",
     shell:
-        "echo $(echo $(zcat {input} | wc -l)/4 | bc) $(basename {input} _noMatch_1.fq.gz) > {output}"
+        "echo $(echo $(zcat {input} | wc -l)*2/4 | bc) $(basename {input} _noMatch_1.fq.gz) > {output}"
 
 # create nreads table for all samples
 rule nreads_all:
